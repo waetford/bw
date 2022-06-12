@@ -1,0 +1,197 @@
+---
+title: "EdX Capstone Project, Ben Waetford"
+output:
+  pdf_document: default
+  html_document: default
+date: "May 2022"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1.0 Introduction
+
+The movielens dataset used in this project contains 10 million records. Each record contains the rating that a person has given to that movie between 1995 and 2009. The objective of this project is to construct a machine learning model that, using a subset of data for training, can predict the rating that individual users have given to the movies **not** contained in the training set.
+
+The techniques used in this project are largely drawn from the EdX Data Science Professional Certificate. Other techniques used have been found by the author from experimentation, from reviewing help files, and from sources such as YouTube and online forums including towardsdatascience.com.
+
+According to the courses grading rubric, the machine learning model must result in an RMSE \< 0.86490. In this project the minimum achieved RMSE is [**what**]{.underline}. The code resulting in this RSME can be found in this report. Also included in this report is a summary analysis of the data, as well as concluding remarks.
+
+# 2.0 Methods and Analysis
+
+## 2.1 Methods
+
+The HarvardX Data Science Professional Certificate includes eight instructor led modules, plus a final captsone project. Each module focuses on different skills. Although this project requires skills learned in each model, the most important to this author were:
+
+-   Visualization methods and techniques for visualizing data using the ggplot2 package.
+
+-   Productivity tools--specifically Git.
+
+-   Machine learning--specifically the formula **Y\_{u, i} = \\mu + \\epsilon\_{u, i}** that calculates RMSE on large datasets, as well as the technique for regularization, which is provided in section 34.9.2 of the course materials.
+
+## 2.2 Data Preparation
+
+### 2.2.1 EdX code
+
+The course provided code to download the movielens data, to format it, and to split it into two data sets. One set being the holdout set which is only used after the model is built, for the purpose of validating the model. The other data is the training data which is used to train the model.
+
+```{r Run code provided by the course creators}
+
+##########################################################
+# Create edx set, validation set (final hold-out test set)
+##########################################################
+
+# Note: this process could take a couple of minutes
+
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+if(!require(data.table)) install.packages("data.table", repos = "http://cran.us.r-project.org")
+
+library(tidyverse)
+library(caret)
+library(data.table)
+
+# MovieLens 10M dataset:
+# https://grouplens.org/datasets/movielens/10m/
+# http://files.grouplens.org/datasets/movielens/ml-10m.zip
+
+dl <- tempfile()
+
+download.file("https://files.grouplens.org/datasets/movielens/ml-10m.zip", dl)
+
+ratings <- fread(text = gsub("::", "\t", readLines(unzip(dl, "ml-10M100K/ratings.dat"))),
+                 col.names = c("userId", "movieId", "rating", "timestamp"))
+
+movies <- str_split_fixed(readLines(unzip(dl, "ml-10M100K/movies.dat")), "\\::", 3)
+colnames(movies) <- c("movieId", "title", "genres")
+
+
+# if using R 4.0 or later:
+movies <- as.data.frame(movies) %>% mutate(movieId = as.numeric(movieId),
+                                           title = as.character(title),
+                                           genres = as.character(genres))
+
+
+movielens <- left_join(ratings, movies, by = "movieId")
+
+# Validation set will be 10% of MovieLens data
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+test_index <- createDataPartition(y = movielens$rating, times = 1, p = 0.1, list = FALSE)
+edx <- movielens[-test_index,]
+temp <- movielens[test_index,]
+
+# Make sure userId and movieId in validation set are also in edx set
+validation <- temp %>% 
+  semi_join(edx, by = "movieId") %>%
+  semi_join(edx, by = "userId")
+
+# Add rows removed from validation set back into edx set
+removed <- anti_join(temp, validation)
+edx <- rbind(edx, removed)
+
+rm(dl, ratings, movies, test_index, temp, movielens, removed)
+
+
+
+```
+
+### 2.2.2 Subset the edx data set further, to create a training set and validation set for model build and testing
+
+According to the instructions provided by the course instructor, the validation set created by the EdX code may **not** be used when training the model. Since the EdX validation set is off-limits during the model training, the edx training set was split into two sets: edxTrain, and edxValidate. Subsequent analysis was based on edxTrain, and the model was constructed with wedxTrain and tested with edxValidate.
+
+```{r My code to generate subsets from edx}
+
+#load libraries
+
+library(ggplot2)
+library(corrplot)
+library(dplyr)
+library(lubridate)
+library(moments)
+
+
+#load data
+# change timestamp into date data type, and create new variables from the date
+
+myedx <- edx %>%
+  mutate(reviewdt = as.POSIXct(edx$timestamp,origin = "1970-01-01"),
+         review_y = round_date(reviewdt, unit = "year"), #the year the review was made
+         INTreview_y = as.integer(year(reviewdt)), #review year as an integer to calculate span later
+         review_ym = round_date(reviewdt, unit = "month"), #the yearmonth the review was made
+         review_ymd = round_date(reviewdt, unit = "day"), #the yearmonthday the review was made
+         release_y = as.integer(sub("\\).*", "", sub(".*\\(", "", edx$title))), #the year the film was released
+         span_y = (INTreview_y - release_y), #the approximate age (in years) of the movie when it was rated
+         howManyGenres = str_count(edx$genres, "\\|")+1) #the number of genres associated with the film
+
+
+#create a test set and validation set from edx
+
+set.seed(1976, sample.kind="Rounding") 
+test_index <- createDataPartition(y = myedx$rating, times = 1, p = 0.7, list = FALSE)
+edxValidate <- myedx[-test_index,] #my validation set
+edxTrain <- myedx[test_index,] #my training set
+
+
+```
+
+## 2.3 Analysis
+
+Since the movielens data set used in this project contains ratings users have given movies, it is important to find out what distinct ratings exist in the data set provided by EdX. Out of interest, the author also wanted to know how many times each rating was given to a movie. The dyplr package provides a method of grouping and counting rows. The data contains 10 ratings, with 4.0 being the most common rating, thus:
+
+```{r Distinct ratings}
+library("dplyr")
+
+edxTrain %>%
+  select(rating) %>%
+  group_by(rating) %>%
+  summarize(number_of_times_used = n())
+```
+
+ggplot2 can be used in conjunction with dyplr to view this information graphically:
+
+```{r Distinct ratings -- vizualization}
+
+edxTrain %>% 
+  select(rating) %>%
+  group_by(rating) %>%
+  summarize(n = n()) %>%
+  ggplot(aes(rating, n)) +
+  geom_col() 
+
+```
+
+However, the fact that half-point ratings are available causes the trend to be more difficult to measure that it would otherwise be if half-point ratings were not possible. To make the trend easier to understand the half-point ratings were rounded, and the resulting data was plotted.
+
+```{r Ratingts rounded to the nearest while number}
+
+edxTrain %>% 
+  select(rating) %>%
+  mutate(rounded_rating = round(rating, digits = 0)) %>%
+  group_by(rounded_rating) %>%
+  summarize(n = n()) %>%
+  ggplot(aes(rounded_rating, n)) +
+  geom_point() +
+  geom_smooth()
+
+```
+
+Check correlations in the data to identify if any features are highly correllated:
+
+```{r Correlation plot}
+
+cordata <- edxTrain %>%
+  select(-c(title, genres, timestamp, INTreview_y, reviewdt, review_y, review_ym, review_ymd)) #remove non numeric for correlation
+C <- cor(cordata)
+corrplot(C, method = 'number', type = 'lower') #nothing special noted in correlation plot
+
+```
+
+Checking for data elements that correlate with rating: there are no strong correlations. the strongest seem to be with release year and span (which is the number of years between the release year and the rating year). The correlations are weak, and therefore, the release year and the time between release and rating do not need to be included in the machine learning model. Note that non-numeric data elements were removed from the data set since only numeric data can be used with the cor() function.
+
+```{r Specific correlations}
+
+cor(edxTrain$rating, edxTrain$release_y)
+cor(edxTrain$rating, edxTrain$span_y)
+
+```
