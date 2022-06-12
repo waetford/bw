@@ -245,62 +245,62 @@ rmse_results <- bind_rows(rmse_results,
                                      RMSE = model_2_rmse ))
 rmse_results %>% knitr::kable()
 
-#release year effect
-release_y_avg <- edxTrain %>%
-  group_by(release_y) %>%
-  summarize(byear = mean(rating - mu))
+#release year effect NOT USED BECUASE OF LOW CORELLATION WITH RATING
+# release_y_avg <- edxTrain %>%
+#   group_by(release_y) %>%
+#   summarize(byear = mean(rating - mu))
+# 
+# predicted_ratings <- edxValidate %>% 
+#   left_join(movie_avg, by='movieId') %>%
+#   left_join(user_avg, by='userId') %>%
+#   left_join(release_y_avg, by = 'release_y') %>%
+#   mutate(pred = mu + bmovie + buser + byear) %>%
+#   .$pred
+# 
+# model_2_rmse <- RMSE(predicted_ratings, edxValidate$rating, na.rm = TRUE)
+# rmse_results <- bind_rows(rmse_results,
+#                           data_frame(method="+ Release Year Effects Model",  
+#                                      RMSE = model_2_rmse ))
+# rmse_results %>% knitr::kable()
 
-predicted_ratings <- edxValidate %>% 
-  left_join(movie_avg, by='movieId') %>%
-  left_join(user_avg, by='userId') %>%
-  left_join(release_y_avg, by = 'release_y') %>%
-  mutate(pred = mu + bmovie + buser + byear) %>%
-  .$pred
+#review year effect NOT USED BECUASE OF LOW CORELLATION WITH RATING
+# review_y_avg <- edxTrain %>%
+#   group_by(review_y) %>%
+#   summarize(byear1 = mean(rating - mu))
+# 
+# predicted_ratings <- edxValidate %>% 
+#   left_join(movie_avg, by='movieId') %>%
+#   left_join(user_avg, by='userId') %>%
+#   left_join(release_y_avg, by = 'release_y') %>%
+#   left_join(review_y_avg, by = 'review_y') %>%
+#   mutate(pred = mu + bmovie + buser + byear + byear1) %>%
+#   .$pred
+# 
+# model_2_rmse <- RMSE(predicted_ratings, edxValidate$rating, na.rm = TRUE)
+# rmse_results <- bind_rows(rmse_results,
+#                           data_frame(method="+ Review Year Effects Model",  
+#                                      RMSE = model_2_rmse ))
+# rmse_results %>% knitr::kable()
 
-model_2_rmse <- RMSE(predicted_ratings, edxValidate$rating, na.rm = TRUE)
-rmse_results <- bind_rows(rmse_results,
-                          data_frame(method="+ Release Year Effects Model",  
-                                     RMSE = model_2_rmse ))
-rmse_results %>% knitr::kable()
-
-#review year effect
-review_y_avg <- edxTrain %>%
-  group_by(review_y) %>%
-  summarize(byear1 = mean(rating - mu))
-
-predicted_ratings <- edxValidate %>% 
-  left_join(movie_avg, by='movieId') %>%
-  left_join(user_avg, by='userId') %>%
-  left_join(release_y_avg, by = 'release_y') %>%
-  left_join(review_y_avg, by = 'review_y') %>%
-  mutate(pred = mu + bmovie + buser + byear + byear1) %>%
-  .$pred
-
-model_2_rmse <- RMSE(predicted_ratings, edxValidate$rating, na.rm = TRUE)
-rmse_results <- bind_rows(rmse_results,
-                          data_frame(method="+ Review Year Effects Model",  
-                                     RMSE = model_2_rmse ))
-rmse_results %>% knitr::kable()
-
-#genre effect
-genre_avg <- edxTrain %>%
-  group_by(genres) %>%
-  summarize(bgenre = mean(rating - mu))
-
-predicted_ratings <- edxValidate %>% 
-  left_join(movie_avg, by='movieId') %>%
-  left_join(user_avg, by='userId') %>%
-  left_join(release_y_avg, by = 'release_y') %>%
-  left_join(review_y_avg, by = 'review_y') %>%
-  left_join(genre_avg, by = 'genres') %>%
-  mutate(pred = mu + bmovie + byear + byear1 + bgenre + buser ) %>%
-  .$pred
-
-model_2_rmse <- RMSE(predicted_ratings, edxValidate$rating, na.rm = TRUE)
-rmse_results <- bind_rows(rmse_results,
-                          data_frame(method="+ Genre Effects Model",  
-                                     RMSE = model_2_rmse ))
-rmse_results %>% knitr::kable()
+# #genre effect NOT USED BECUSAE IT INCREASES THE RMSE
+# genre_avg <- edxTrain %>%
+#   group_by(genres) %>%
+#   summarize(bgenre = mean(rating - mu))
+# 
+# predicted_ratings <- edxValidate %>% 
+#   left_join(movie_avg, by='movieId') %>%
+#   left_join(user_avg, by='userId') %>%
+#   #left_join(release_y_avg, by = 'release_y') %>%
+#   #left_join(review_y_avg, by = 'review_y') %>%
+#   left_join(genre_avg, by = 'genres') %>%
+#   mutate(pred = mu + bmovie + bgenre + buser ) %>%
+#   .$pred
+# 
+# model_2_rmse <- RMSE(predicted_ratings, edxValidate$rating, na.rm = TRUE)
+# rmse_results <- bind_rows(rmse_results,
+#                           data_frame(method="+ Genre Effects Model",  
+#                                      RMSE = model_2_rmse ))
+# rmse_results %>% knitr::kable()
 
 #regularization
 #adapted from 34.9.2 
@@ -334,12 +334,12 @@ rmses <- sapply(lambdas, function(l){
     left_join(b_m, by="movieId") %>%
     group_by(userId) %>%
     summarise(b_u = sum(rating - b_m - mu)/(n()+l))
-  b_g <- edxTrain %>%
-    left_join(b_m, by="movieId") %>%
-    left_join(b_u, by="userId") %>%
-    group_by(genres) %>%
-    summarise(b_g = sum(rating - b_m - b_u - mu)/(n()+l))
-  # b_y <- edxTrain %>%
+  # b_g <- edxTrain %>%
+  #   left_join(b_m, by="movieId") %>%
+  #   left_join(b_u, by="userId") %>%
+  #   group_by(genres) %>%
+  #   summarise(b_g = sum(rating - b_m - b_u - mu)/(n()+l))
+  # # b_y <- edxTrain %>%
   #   left_join(b_m, by="movieId") %>%
   #   left_join(b_u, by="userId") %>%
   #   left_join(b_g, by = "genres") %>%
@@ -348,9 +348,9 @@ rmses <- sapply(lambdas, function(l){
   predicted_ratings <- edxValidate %>%
     left_join(b_m, by="movieId") %>%
     left_join(b_u, by="userId") %>%
-    left_join(b_g, by="genres") %>%
+    # left_join(b_g, by="genres") %>%
     #left_join(b_y, by = "review_y")
-    mutate(pred = mu + b_m + b_u + b_g ) %>%
+    mutate(pred = mu + b_m + b_u) %>%
     pull(pred)
   return(RMSE(predicted_ratings, edxValidate$rating, na.rm = TRUE))
 })
@@ -365,4 +365,64 @@ rmse_results <- bind_rows(rmse_results,
 rmse_results %>% knitr::kable()
 
 
+##training and testing complete
 
+#Pull Final Results Using Edx DAta
+
+
+lambdas <- seq(0, 10, 0.25)
+
+mu <- mean(edx$rating)
+summ <- edx %>% 
+  group_by(movieId) %>% 
+  summarize(s = sum(rating - mu), n_i = n())
+
+rmses <- sapply(lambdas, function(l){
+  predicted_ratings <- validation %>% 
+    left_join(summ, by='movieId') %>% 
+    mutate(bmovie = s/(n_i+l)) %>%
+    mutate(pred = mu + bmovie) %>%
+    pull(pred)
+  return(RMSE(predicted_ratings, validation$rating, na.rm = TRUE))
+})
+
+qplot(lambdas, rmses)  
+lambdas[which.min(rmses)]
+
+rmses <- sapply(lambdas, function(l){
+  b_m <- edx %>%
+    group_by(movieId) %>%
+    summarise(b_m = sum(rating - mu)/(n()+l))
+  b_u <- edx %>%
+    left_join(b_m, by="movieId") %>%
+    group_by(userId) %>%
+    summarise(b_u = sum(rating - b_m - mu)/(n()+l))
+  # b_g <- edxTrain %>%
+  #   left_join(b_m, by="movieId") %>%
+  #   left_join(b_u, by="userId") %>%
+  #   group_by(genres) %>%
+  #   summarise(b_g = sum(rating - b_m - b_u - mu)/(n()+l))
+  # # b_y <- edxTrain %>%
+  #   left_join(b_m, by="movieId") %>%
+  #   left_join(b_u, by="userId") %>%
+  #   left_join(b_g, by = "genres") %>%
+  #   group_by(review_y) %>%
+  #   summarise(b_y = sum(rating - b_m - b_u - b_g - mu)/(n()+l))
+  predicted_ratings <- validation %>%
+    left_join(b_m, by="movieId") %>%
+    left_join(b_u, by="userId") %>%
+    # left_join(b_g, by="genres") %>%
+    #left_join(b_y, by = "review_y")
+    mutate(pred = mu + b_m + b_u) %>%
+    pull(pred)
+  return(RMSE(predicted_ratings, validation$rating, na.rm = TRUE))
+})
+
+lambda <- lambdas[which.min(rmses)]
+qplot(lambdas, rmses)
+model3 <-  min(rmses)
+
+rmse_results <- bind_rows(rmse_results,
+                          data_frame(method="+ FINAL Lambda Model",  
+                                     RMSE = model3 ))
+rmse_results %>% knitr::kable()

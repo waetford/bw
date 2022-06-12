@@ -137,6 +137,8 @@ edxTrain <- myedx[test_index,] #my training set
 
 ## 2.3 Analysis
 
+In this section, the Edx training dataset is use to produce summary statistics as a proxy summary statisitics that represent the enitre 10M dataset..
+
 Since the movielens data set used in this project contains ratings users have given movies, it is important to find out what distinct ratings exist in the data set provided by EdX. Out of interest, the author also wanted to know how many times each rating was given to a movie. The dyplr package provides a method of grouping and counting rows. The data contains 10 ratings, with 4.0 being the most common rating, thus:
 
 ```{r Distinct ratings}
@@ -163,7 +165,7 @@ edxTrain %>%
 
 However, the fact that half-point ratings are available causes the trend to be more difficult to measure that it would otherwise be if half-point ratings were not possible. To make the trend easier to understand the half-point ratings were rounded, and the resulting data was plotted.
 
-```{r Ratingts rounded to the nearest while number}
+```{r Ratings rounded to the nearest while number}
 
 edxTrain %>% 
   select(rating) %>%
@@ -176,7 +178,19 @@ edxTrain %>%
 
 ```
 
-Check correlations in the data to identify if any features are highly correllated:
+All ratings in the data set were made between 1995 and 2009m with the significant majority being made since the year 2000. In fact, the highest number of ratings were in 2000, with 1997, 2001 and 2005 coming in a close three-way-tie for second place.
+
+```{r Ratings by year}
+
+edxTrain %>%
+  select(review_y) %>%
+  group_by(review_y) %>%
+  summarise(n = n()) %>%
+  ggplot(aes(review_y, n)) +
+  geom_col()
+```
+
+Before machinel learning model is used to predict movie ratings, correlations were investigated is a way of identifying if any engineered features should be included in the model:
 
 ```{r Correlation plot}
 
@@ -195,3 +209,7 @@ cor(edxTrain$rating, edxTrain$release_y)
 cor(edxTrain$rating, edxTrain$span_y)
 
 ```
+
+## 2.4 Training the Machine Learning Model
+
+## 
