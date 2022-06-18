@@ -3,7 +3,7 @@ title: "EdX Capstone Project, Ben Waetford"
 output:
   pdf_document: default
   html_document: default
-date: "May 2022"
+date: "June 2022"
 ---
 
 ```{r setup, include=FALSE}
@@ -216,7 +216,7 @@ Code in this section is adapted from Irizarry (2020).
 
 The film's release year, the time duration between the release of the movie and the review, and the number of genres the films are categorized in were computed in section 2.2 Data Preparation. According to section 2.3 Analysis, the computed features are not highly correlated with the film's ratings, thus; the engineered features are not included in the code generated to train the machine learning model (however, during training, the features were included for testing purposes, see the rmd file that accompanies this report to see the entire code base generate d for this assignment).
 
-### 2.4.1 Building and training the model data generated in section 2.2.2; without regularization:
+### 2.4.1 Building and training the model with data generated in section 2.2.2; without regularization:
 
 ```{r}
 #RMSE
@@ -262,6 +262,8 @@ rmse_results %>% knitr::kable()
 ```
 
 2.4.2 Enhancing the model with regularization:
+
+We need to use cross-validation to choose the penalty term lambda (Irizarry, 2020).
 
 ```{r}
 lambdas <- seq(0, 10, 0.25)
@@ -313,7 +315,7 @@ rmse_results %>% knitr::kable()
 
 ## 2.5 The Final Model
 
-Now the Edx can be processed and the final RMSE an be reported.
+Now the Edx data can be processed and the final RMSE an be reported, again, we will use cross validation to choose the penalty term, then we will use that penalty in our final model. We calculate lambda again because we are now calculating RMSE for the full set of data using the model built in section 2.4.
 
 ```{r}
 lambdas <- seq(0, 10, 0.25)
@@ -357,14 +359,16 @@ rmses <- sapply(lambdas, function(l){
 lambda <- lambdas[which.min(rmses)]
 qplot(lambdas, rmses)
 model3 <-  min(rmses)
+```
 
+### 2.5.1 Final Results.
+
+```{r}
 rmse_results <- bind_rows(rmse_results,
                           data_frame(method="+ FINAL Lambda Model",  
                                      RMSE = model3 ))
 rmse_results %>% knitr::kable()
 ```
-
-## 
 
 # 3.0 Conclusions
 
@@ -376,4 +380,4 @@ When analyzing data it is important to measure the effect of data elements that 
 
 **Reference.**
 
-Irizarry, Rafael (2020) . *Introduction to Data Science: Data Analysis and Prediction Algorithms with R.* CHAPMAN & HALL/CRC DATA SCIENCE SERIES. Boca Raton: CRC Press, Taylor & Francis Group.
+Irizarry, Rafael (2020) . *Introduction to Data Science: Data Analysis and Prediction Algorithms with R.* Chapman & Hall/CRC Data Science Series. Boca Raton: CRC Press, Taylor & Francis Group.
